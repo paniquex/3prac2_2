@@ -1,6 +1,6 @@
 #ifndef PRAC2_2_CUSTOM_STDIO_H
 #define PRAC2_2_CUSTOM_STDIO_H
-
+#include <errno.h>
 #endif //PRAC2_2_CUSTOM_STDIO_H
 
 #define EOF (-1)
@@ -17,8 +17,10 @@ enum _flags {
 	_ERR = 020
 };
 typedef struct _FILE {
-	int access_flag; //                               	int fd; 		 // file descriptor
+	int access_flag; //
+	int fd; 		 // file descriptor
 	int count;		//number of symbols left
+	char symbol; 	//symbol, which was read
 	char *next;		//ptr to next symbol
 } FILE;
 
@@ -30,3 +32,6 @@ FILE _openFD[MAX_FILES]; // array of file descriptors
 #define PERMISSIONS 0600 // permissions for creator only (RW)
 FILE *
 fopen(char *fileName, char *flags);
+
+int
+fgetc(FILE *file);

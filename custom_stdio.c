@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 FILE *
 fopen(char *fileName, char *flags)
@@ -26,10 +27,17 @@ fopen(char *fileName, char *flags)
 		return NULL;
 	}
 
+
 /* file is OK, so we can open it with correct permissions and mode */
 	if (strcmp(flags, "r") == 0) {
 		if ((fd = open(fileName, O_RDONLY)) != -1) {
 			file->access_flag = _READ;
+		//	ssize_t wasReadCorrect = 1;
+		//	int count = 1;
+		//	file->base = calloc(count, sizeof(char));
+		//	while ((wasReadCorrect = read(fd, file->base + count - 1, sizeof(char))) == 1) {
+		//		file->base = realloc(file->base, (++count) * sizeof(char));
+		//	}
 		}
 	} else if (strcmp(flags, "w") == 0) {
 		if ((fd = open(fileName, O_WRONLY | O_TRUNC)) != -1) {
@@ -63,6 +71,22 @@ fopen(char *fileName, char *flags)
 
 
 int
-fgetc(char *fileName) {
-	
+fgetc(FILE *file) {
+	if ((file->access_flag & (_READ | _EOF | _ERR)) != _READ) {
+		/* if file has opened WITHOUT READ permissions */
+		return EOF;
+	}
+	const int read_size = 1; //amount of bytes to read
+	ssize_t read_was_correct = 1;
+	read_was_correct = read(file->fd, &(file->symbol), read_size);
+	if (read_was_correct == 0) {
+		/* we can't read anymore */
+		return EOF;
+	} else if (read_was_correct == -1) {
+		/* error, not EOF */
+		return EOF;
+	}
+	file->count = (int) read_was_correct;
+	return (unsigned int) file->symbol;
+
 }
