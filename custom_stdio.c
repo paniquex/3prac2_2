@@ -15,6 +15,7 @@ fopen(char *fileName, char *flags)
 				strcmp(flags, "w+") * strcmp(flags, "a") * strcmp(flags, "a+");
 	//printf("%d", isNotCorrectFlag);
 	if (isNotCorrectFlag) {
+		errno = EINVAL; //invalid argument
 		return NULL;
 	}
 	for(file = _openFD; file < _openFD + MAX_FILES; file++) {
@@ -24,6 +25,7 @@ fopen(char *fileName, char *flags)
     	}
 	}
 	if (file >= _openFD + MAX_FILES) { // we haven't got any free position
+		errno = EMFILE;
 		return NULL;
 	}
 
@@ -32,12 +34,6 @@ fopen(char *fileName, char *flags)
 	if (strcmp(flags, "r") == 0) {
 		if ((fd = open(fileName, O_RDONLY)) != -1) {
 			file->access_flag = _READ;
-		//	ssize_t wasReadCorrect = 1;
-		//	int count = 1;
-		//	file->base = calloc(count, sizeof(char));
-		//	while ((wasReadCorrect = read(fd, file->base + count - 1, sizeof(char))) == 1) {
-		//		file->base = realloc(file->base, (++count) * sizeof(char));
-		//	}
 		}
 	} else if (strcmp(flags, "w") == 0) {
 		if ((fd = open(fileName, O_WRONLY | O_TRUNC)) != -1) {
@@ -54,14 +50,15 @@ fopen(char *fileName, char *flags)
 	} else if (strcmp(flags, "a") == 0) {
 		if ((fd = open(fileName, O_WRONLY | O_CREAT | O_APPEND, PERMISSIONS)) != -1) {
 			file->access_flag = _WRITE;
+			lseek(fd, 0, SEEK_END);
 		}
 	} else if (strcmp(flags, "a+") == 0) {
 		if ((fd = open(fileName, O_RDWR | O_CREAT | O_APPEND, PERMISSIONS)) != -1) {
 			file->access_flag = _WRITE | _READ;
+			lseek(fd, 0, SEEK_END);
 		}
 	}
 	if (fd == -1) {
-		errno = 1;
 		return NULL;
 	}
 	file->fd = fd;
@@ -89,4 +86,23 @@ fgetc(FILE *file) {
 	file->count = (int) read_was_correct;
 	return (unsigned int) file->symbol;
 
+}
+
+int
+fputc(int symbol, FILE *file) {
+	if ((file->access_flag & (_EOF | _ERR | _WRITE)) != _WRITE) {
+		/*if file has opened WITHOUT WRITE permissions */
+		return EOF;
+	}
+	const int write_size = 1; //amount of bytes to write
+	ssize_t write_was_correct = 1;
+	write_was_correct = write(file->fd, &(symbol), write_size);
+	if (write_was_correct == 0) {
+		/* we can't write anymore */
+		return EOF;
+	} else if (write_was_correct == -1) {
+		/* error */
+		return EOF;
+	}
+	return (unsigned int) symbol;
 }
