@@ -8,7 +8,7 @@
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
-#define MAX_FILES 10
+#define MAX_FILES 7
 
 enum _flags {
 	_READ = 01,
@@ -19,15 +19,17 @@ enum _flags {
 typedef struct _FILE {
 	int access_flag; //
 	int fd; 		 // file descriptor
-	int count;		//number of symbols left
+	int count;		//number of symbols was read
 	char symbol; 	//symbol, which was read
-	char *next;		//ptr to next symbol
+//	char *next;		//ptr to next symbol
 } FILE;
 
-FILE _openFD[MAX_FILES]; // array of file descriptors
+FILE _openFD[MAX_FILES];
+
 #define stdin (&_openFD[0])
 #define stdout (&_openFD[1])
 #define stderr (&_openFD[2])
+
 
 #define PERMISSIONS 0600 // permissions for creator only (RW)
 FILE *
@@ -35,3 +37,14 @@ fopen(char *fileName, char *flags);
 
 int
 fgetc(FILE *file);
+
+int
+fputc(int symbol, FILE *file);
+
+
+int
+fseek(FILE *file, long offset, int origin);
+
+
+int
+fclose(FILE *file);
