@@ -4,6 +4,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+FILE _openFD[MAX_FILES] = {
+		{ _READ,  0, 0, 'a' },
+		{ _WRITE, 1, 0, 'a' },
+		{ _WRITE, 2, 0, 'a' }
+}; // array of file descriptors
+
+
 FILE *
 fopen(char *fileName, char *flags)
 {
@@ -59,6 +66,7 @@ fopen(char *fileName, char *flags)
 		}
 	}
 	if (fd == -1) {
+		file->access_flag = 0;
 		return NULL;
 	}
 	file->fd = fd;
@@ -83,10 +91,11 @@ fgetc(FILE *file) {
 		/* error, not EOF */
 		return EOF;
 	}
-	file->count = (int) read_was_correct;
+	file->count++;
 	return (unsigned int) file->symbol;
 
 }
+
 
 int
 fputc(int symbol, FILE *file) {
@@ -102,7 +111,51 @@ fputc(int symbol, FILE *file) {
 		return EOF;
 	} else if (write_was_correct == -1) {
 		/* error */
+		file->count = 0;
 		return EOF;
 	}
+	file->count++;
 	return (unsigned int) symbol;
+}
+
+/* returns 1 if file is null
+ * returns 2 if our pointer < start pointer
+ * returns 0 if success*/
+int
+fseek(FILE *file, long offset, int origin) {
+	if (file == NULL) {
+		return 1;
+ 	} else {
+		long check_offset;
+		if (file->access_flag != 0) { // if file have at least one permission
+			//check
+			long diff = lseek(file->fd, 0, SEEK_END) - check_offset; //difference between end of file and cur_position
+			//check
+			if (diff == 0) {  // if it is end of file
+				file->access_flag |= _EOF;
+			} else {
+				file->access_flag &= ~(_EOF); //it is not of file
+			}
+			diff = lseek(file->fd, 0, SEEK_SET) - check_offset; //differ between start of file and cur position
+			//check
+			if (diff > 0) { //cur position is "left-hand" for start position = error
+				return 2;
+			}
+		}
+	}
+	return 0;
+}
+
+
+int
+fclose(FILE *file) {
+	if (file != NULL) {
+		if (file->access_flag == 0) {
+			return EOF;
+		}
+		file->access_flag = 0; //free position of this file in _openFD
+		return close(file->fd);
+	}
+	return EOF;
+
 }
